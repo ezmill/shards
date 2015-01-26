@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>opalescent diamonds</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+		<style>
+			body {
+				background:#000;
+				color:#fff;
+				padding:0;
+				margin:0;
+				overflow:hidden;
+				font-family:georgia;
+				text-align:center;
+			}
+			.fa{
+				color: white;
+				z-index: 10000;
+				position: absolute;
+			}
+			.fa:hover{
+				text-decoration: none;
+				color: white;
+			}
+			#hamburger, #hamburger-close{
+				top: 0;
+				left: 0;
+				margin: 30px;
+			}
+			#hamburger-close{
+				display: none;
+			}
+			.nav-lr{
+				text-decoration: none;
+				color: white;
+				top: 50vh;
+				margin: 0 30px;
+			}
+
+			#nav-left{
+				left: 0;
+			}
+
+			#nav-right{
+				right: 0;
+			}
+
+			.nav-box{
+				position: absolute;
+				top: 20px;
+				left: 20px;
+				background: rgba(255,255,255,0.2);
+				width: 20vw;
+				display: none;
+				height: auto;
+			}
+			.nav-box ul{
+				list-style: none;
+				padding: 20px
+			}
+			.nav-box ul li{
+				margin: 20px;
+			}
+			.nav-box ul li a{
+				color: white;
+				text-decoration: none;
+			}
+			.navigation{
+				position: relative;
+				left: 0;
+			}
+			.about{
+				border-left: 1px solid white;
+				width: 20vw;
+				position: relative;
+				left: 0;
+			}
+			canvas { z-index:10; }
+		</style>
+	</head>
+
+	<body>
+<!-- 		<a href=""><i id="hamburger" class="fa fa-navicon fa-2x"></i></a>
+		<div class="nav-box">
+			<span class="navigation">
+				<h4>Navigation</h4>
+				<ul>
+					<li><a href="">One</a></li>
+					<li><a href="">Two</a></li>
+					<li><a href="">Three</a></li>
+					<li><a href="">Four</a></li>
+				</ul>
+			</span>
+			<span class="about">
+				<div>Stuff</div>
+			</span>
+		</div>
+		<a href=""><i id="hamburger-close" class="fa fa-close fa-2x"></i></a>
+		<a href=""><i id="nav-left" class="fa nav-lr fa-angle-left fa-4x"></i></a>
+		<a href=""><i id="nav-right" class="fa nav-lr fa-angle-right fa-4x"></i></a> -->
+		<script src="js/three.min.js"></script>
+
+		<script src="js/BinaryLoader.js"></script>
+
+		<script src="js/Detector.js"></script>
+		<script src="js/stats.min.js"></script>
+		<script>
+			var hamburger = document.getElementById("hamburger");
+			var close = document.getElementById("hamburger-close");
+			hamburger.onclick = function(e){
+				e.preventDefault();
+				var navDiv = document.getElementsByClassName("nav-box")[0];
+				navDiv.style.display = "block";
+				hamburger.style.display = "none";
+				close.style.display = "inline";
+			}
+		</script>
+		<script>
+
+			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+			var FLOOR = -250;
+
+			var container, stats;
+
+			var camera, scene, renderer;
+			var cameraCube, sceneCube, cubeTarget;
+
+			var mesh, zmesh, geometry;
+
+			var loader;
+
+			var directionalLight, pointLight;
+
+			var mouseX = 0, mouseY = 0;
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+
+			init();
+			animate();
+
+			function init() {
+
+				container = document.createElement('div');
+				document.body.appendChild(container);
+
+				// camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 100000 );
+				camera = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 1, 100000 );
+				camera.position.z = 500;
+
+				cameraCube = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 100000 );
+				// cameraCube = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 1, 100000 );
+
+
+				scene = new THREE.Scene();
+				sceneCube = new THREE.Scene();
+
+				// LIGHTS
+
+				var ambient = new THREE.AmbientLight( 0xffffff );
+				scene.add( ambient );
+
+				// pointLight = new THREE.PointLight( 0xffffff, 20 );
+				// scene.add( pointLight );
+
+				// // light representation
+
+				// var sphere = new THREE.SphereGeometry( 100, 16, 8 );
+
+				// var mesh = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xffffff } ) );
+				// mesh.scale.set( 0.05, 0.05, 0.05 );
+				// pointLight.add( mesh );
+
+				// material samples
+
+				var r = "textureCube/";
+
+				// var urls = [ r + "diamondcube.jpg", r + "diamondcube.jpg",
+				// 			 r + "diamondcube.jpg", r + "diamondcube.jpg",
+				// 			 r + "diamondcube.jpg", r + "diamondcube.jpg" ];
+				var urls = [];
+				for(var i = 0; i < 6; i++){
+					var string = "diamonds1.png";
+					urls.push(r + string);
+				}
+
+	
+
+				var textureCube = THREE.ImageUtils.loadTextureCube( urls, THREE.CubeRefractionMapping );
+				// var tex = THREE.ImageUtils.loadTexture( "textureCube/pearls.png");
+
+				var cubeMaterial3 = new THREE.MeshBasicMaterial( { color: 0xccddff, map: textureCube, refractionRatio: 0.98, reflectivity:0.9 } );
+				var cubeMaterial2 = new THREE.MeshBasicMaterial( { color: 0xccfffd, envMap: textureCube, refractionRatio: 0.985 } );
+				var cubeMaterial1 = new THREE.MeshBasicMaterial( { color: 0xffffff, envMap: textureCube, refractionRatio: 0.67, reflectivity:0.95 } )
+
+				// Skybox
+
+				var shader = THREE.ShaderLib[ "cube" ];
+				shader.uniforms[ "tCube" ].value = textureCube;
+
+				var material = new THREE.ShaderMaterial( {
+
+					fragmentShader: shader.fragmentShader,
+					vertexShader: shader.vertexShader,
+					uniforms: shader.uniforms,
+					side: THREE.BackSide
+
+				} );
+
+				// var material = new THREE.MeshBasicMaterial({map:});
+
+
+				skymesh = new THREE.Mesh( new THREE.BoxGeometry( 100000, 100000, 100000 ), material );
+				sceneCube.add( skymesh );
+
+				//
+
+				renderer = new THREE.WebGLRenderer({preserveDrawingBuffer:true});
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setClearColor(0xffffff,1);
+				renderer.autoClear = false;
+				container.appendChild( renderer.domElement );
+
+				stats = new Stats();
+				stats.domElement.style.position = 'absolute';
+				stats.domElement.style.top = '0px';
+				stats.domElement.style.zIndex = 100;
+				// contpearlsdChild( stats.domElement );
+
+				loader = new THREE.BinaryLoader( true );
+				document.body.appendChild( loader.statusDomElement );
+
+				loader.load( 'models/glass-model.js', function( geometry ) { createScene( geometry, cubeMaterial1, cubeMaterial2, cubeMaterial3 ) } );
+
+				// var sphereGeometry = new THREE.SphereGeometry(30,30,30);
+				// createScene(sphereGeometry);
+
+				document.addEventListener('mousemove', onDocumentMouseMove, false);
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+				window.addEventListener( 'keydown', onKeyDown, false );
+
+			}
+
+			function onWindowResize() {
+
+				windowHalfX = window.innerWidth / 2,
+				windowHalfY = window.innerHeight / 2,
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				cameraCube.aspect = window.innerWidth / window.innerHeight;
+				cameraCube.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function createScene( geometry, m1, m2, m3 ) {
+
+				var s = 12.5;
+				var z =-1000;
+				rotObj = new THREE.Object3D();
+				// rotObj.position.set(0,600,0);
+			    glassMesh = new THREE.Mesh( geometry, m1 );
+				glassMesh.position.z = z;
+				glassMesh.position.y = -600;
+				glassMesh.scale.x = glassMesh.scale.y = glassMesh.scale.z = s;
+				rotObj.add(glassMesh);
+				scene.add( rotObj );
+
+				// var mesh = new THREE.Mesh( geometry, m2 );
+				// mesh.position.x = - 900;
+				// mesh.position.z = z;
+				// mesh.scale.x = mesh.scale.y = mesh.scale.z = s;
+				// scene.add( mesh );
+
+				// var mesh = new THREE.Mesh( geometry, m3 );
+				// mesh.position.x = 900;
+				// mesh.position.z = z;
+				// mesh.scale.x = mesh.scale.y = mesh.scale.z = s;
+				// scene.add( mesh );
+
+				loader.statusDomElement.style.display = "none";
+
+			}
+
+			function onDocumentMouseMove(event) {
+
+				mouseX = ( event.clientX - windowHalfX ) * 0.25;
+				mouseY = ( event.clientY - windowHalfY ) * 0.25;
+
+			}
+			function onKeyDown( event ){
+				if( event.keyCode == "32"){
+					screenshot();
+					
+			function screenshot(){
+				// var i = renderer.domElement.toDataURL('image/png');
+				var blob = dataURItoBlob(renderer.domElement.toDataURL('image/png'));
+				var file = window.URL.createObjectURL(blob);
+				var img = new Image();
+				img.src = file;
+			    img.onload = function(e) {
+				    // window.URL.revokeObjectURL(this.src);
+    			    window.open(this.src);
+
+			    }
+				 // window.open(i)
+				// insertAfter(img, );
+			}
+			//
+					function dataURItoBlob(dataURI) {
+					    // convert base64/URLEncoded data component to raw binary data held in a string
+					    var byteString;
+					    if (dataURI.split(',')[0].indexOf('base64') >= 0)
+					        byteString = atob(dataURI.split(',')[1]);
+					    else
+					        byteString = unescape(dataURI.split(',')[1]);
+
+					    // separate out the mime component
+					    var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+
+					    // write the bytes of the string to a typed array
+					    var ia = new Uint8Array(byteString.length);
+					    for (var i = 0; i < byteString.length; i++) {
+					        ia[i] = byteString.charCodeAt(i);
+					    }
+
+					    return new Blob([ia], {type:mimeString});
+					}
+					function insertAfter(newNode, referenceNode) {
+					    referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
+					}
+				}
+			}
+
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+				// stats.update();
+
+			}
+
+			function render() {
+
+				var timer = -0.0002 * Date.now();
+
+				camera.position.x += ( mouseX - camera.position.x ) * .05;
+				camera.position.y += ( - mouseY - camera.position.y ) * .05;
+				// glassMesh.rotation.y += ( - mouseY - camera.position.y ) * .00005;
+				camera.lookAt( scene.position );
+				// skymesh.visible = false;
+				// glassMesh.rotation.y = mouseX*0.006;
+				// rotObj.rotation.x = mouseY*0.005;
+				// glassMesh.rotation.y = timer;
+				// mesh.rotation.x = Math.cos(timer);
+				// mesh.rotation.z = Math.tan(timer);
+				// cameraCube.rotation.copy( camera.rotation );
+				// cameraCube.rotation.set( 0,Math.sin(timer),0 );
+
+				// pointLight.position.x = 500 * Math.cos( timer );
+				// pointLight.position.z = 500 * Math.sin( timer );
+
+				// renderer.clear();
+				renderer.render( sceneCube, cameraCube );
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+</html>
